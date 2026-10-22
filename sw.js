@@ -1,7 +1,7 @@
 /* Carnet de muscu — fonctionne hors connexion.
    Page : réseau d'abord (toujours la dernière version quand on est en ligne), cache sinon.
    Polices et images : cache d'abord, rafraîchies en arrière-plan. */
-var CACHE = 'carnet-muscu-1.2';
+var CACHE = 'carnet-muscu-1.3';
 var SHELL = ['./', './index.html', './manifest.webmanifest', './apple-touch-icon.png?v=2', './icon-192.png?v=2', './icon-512.png?v=2'];
 
 self.addEventListener('install', function (e) {
