@@ -16,6 +16,7 @@
 <link rel="icon" type="image/png" href="icon-192.png?v=2">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Carnet de muscu</title>
+<style id="kit-style"></style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
@@ -42,7 +43,8 @@
   --stop-soft:#F8DEDA;
   --b-jaune:#F2C230;
   --b-rouge:#D63A2C;
-  --b-vert:#2F9C57;
+  --b-vert:#7DBB42;
+  --b-orange:#F08A2A;
   --b-bleu:#2C66D8;
   --b-noir:#24282D;
   --hero-n:#3B4148;
@@ -168,6 +170,9 @@ textarea.field{min-height:100px;padding:12px 14px;font-size:16px;line-height:1.4
 .stack{display:flex;flex-direction:column;gap:14px}
 
 /* ---------- séance (vue) ---------- */
+.kit-pick{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.kit-c{width:28px;height:28px;border-radius:50%;border:0;box-shadow:inset 0 0 0 1px rgba(127,127,127,.35)}
+.kit-c.on{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--ink)}
 .banner{display:flex;align-items:center;gap:12px;padding:14px 14px 14px 16px;border-radius:18px;background:var(--card);margin-bottom:12px}
 .banner p{flex:1;margin:0;font-size:15px;line-height:1.4}
 .banner p b{display:block;font-size:16px}
@@ -345,6 +350,7 @@ td{padding:9px 10px 9px 0;border-bottom:1px solid var(--line);font-variant-numer
 .fg-shoulders,.fg-hips{fill:none;stroke:var(--ink);stroke-width:12;stroke-linecap:round}
 .fg-top{stroke-width:15}
 .fg-head{fill:var(--ink)}
+.fg-halo{fill:none;stroke:var(--card);stroke-width:16;stroke-linecap:round;stroke-linejoin:round}
 .fg-band{fill:none;stroke-width:4;stroke-linecap:round}
 .fg-towel{fill:var(--ink-3)}
 .s-how .fig{margin:2px 0 12px}
@@ -432,14 +438,18 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 const list=(arr,unit)=>arr.join(', ')+(unit==='s'?' s':'');
 
 /* ============ programme ============ */
+/* Les 3 boucles Domyos (10, 20, 30 kg), puis leurs combinaisons : deux boucles ensemble additionnent à peu près leur résistance. */
 const BANDS=[
-  {k:'jaune',label:'Élastique jaune',s:'Jaune'},
-  {k:'rouge',label:'Élastique rouge',s:'Rouge'},
-  {k:'vert',label:'Élastique vert',s:'Vert'},
-  {k:'bleu',label:'Élastique bleu',s:'Bleu'},
-  {k:'noir',label:'Élastique noir',s:'Noir'},
-  {k:'double',label:'Deux élastiques',s:'Deux élastiques'}
+  {k:'k10',label:'Élastique 10 kg',s:'10 kg'},
+  {k:'k20',label:'Élastique 20 kg',s:'20 kg'},
+  {k:'k30',label:'Élastique 30 kg',s:'30 kg'},
+  {k:'k40',label:'10 + 30 kg ensemble',s:'10 + 30 kg'},
+  {k:'k50',label:'20 + 30 kg ensemble',s:'20 + 30 kg'},
+  {k:'k60',label:'Les trois ensemble',s:'Les trois'}
 ];
+const COMBO={k10:[10],k20:[20],k30:[30],k40:[30,10],k50:[30,20],k60:[30,20,10]};
+/* anciens niveaux par couleur, gardés pour l'historique */
+const LEGACY={jaune:'Élastique jaune',rouge:'Élastique rouge',vert:'Élastique vert',bleu:'Élastique bleu',noir:'Élastique noir',double:'Deux élastiques'};
 const BW={k:'pdc',label:'Poids du corps',s:'Poids du corps'};
 const BWB=[BW].concat(BANDS);
 const L=(k,label)=>({k,label,s:label});
@@ -458,12 +468,16 @@ const EXOS=[
    levels:[L('classique','Classique'),L('sac','Sac à dos sur les cuisses'),L('jambe','Une jambe tendue')],
    how:"Dos plaqué au mur, cuisses parallèles au sol, genoux au-dessus des chevilles. Respire normalement pendant tout le maintien."},
   /* Dos */
-  {id:'rowing',name:"Rowing à l'élastique",target:'3 × 10–15',sets:3,min:10,max:15,levels:BANDS,
+  {id:'rowing_assis',name:'Rowing assis',target:'3 × 10–15',sets:3,min:10,max:15,levels:BANDS,
+   how:"Assis au sol, jambes tendues, boucle passée sous la plante des pieds. Tire les coudes vers l'arrière en serrant les omoplates."},
+  {id:'tirage_ecarte',name:'Tirage écarté au-dessus de la tête',target:'3 × 10–15',sets:3,min:10,max:15,levels:BANDS,
+   how:"Bras tendus au-dessus de la tête, boucle tenue entre les mains. Écarte les mains en descendant les coudes jusqu'à la poitrine."},
+  {id:'rowing',anchor:true,name:'Rowing debout (accroche)',target:'3 × 10–15',sets:3,min:10,max:15,levels:BANDS,
    how:"Élastique accroché à la porte, côté charnières, tiré dans le sens qui ferme la porte. Tire les coudes vers l'arrière en serrant les omoplates."},
   {id:'rowing_table',name:'Rowing inversé sous une table',target:'3 × 6–12',sets:3,min:6,max:12,
    levels:[L('genoux','Genoux pliés'),L('tendues','Jambes tendues'),L('pieds','Pieds surélevés')],
    how:"Allongé sous une table très solide, mains au bord. Tire la poitrine vers la table, corps gainé. Vérifie d'abord qu'elle ne peut pas basculer."},
-  {id:'tirage_haut',name:"Tirage vertical à l'élastique",target:'3 × 10–15',sets:3,min:10,max:15,levels:BANDS,
+  {id:'tirage_haut',anchor:true,name:'Tirage vertical (accroche en hauteur)',target:'3 × 10–15',sets:3,min:10,max:15,levels:BANDS,
    how:"Élastique accroché en haut de la porte, à genoux face à elle. Tire les coudes vers les hanches, poitrine sortie."},
   {id:'rowing_1bras',name:'Rowing un bras',target:'3 × 10–15',note:'par bras',sets:3,min:10,max:15,levels:BANDS,
    how:"Pied sur l'élastique, buste penché, main libre posée sur une chaise. Tire le coude vers la hanche en gardant le dos plat."},
@@ -499,15 +513,30 @@ const EXOS=[
    levels:[L('sol','Pieds au sol'),L('chaise','Pieds sur une chaise')],
    how:"Hanches hautes, corps en V à l'envers. Descends le haut du crâne vers le sol entre les mains, puis repousse."},
   /* Haut du dos */
-  {id:'visage',name:'Tirage vers le visage',target:'2 × 12–15',sets:2,min:12,max:15,levels:BANDS,
+  {id:'visage',anchor:true,name:'Tirage vers le visage (accroche)',target:'2 × 12–15',sets:2,min:12,max:15,levels:BANDS,
    how:"Élastique accroché à hauteur des yeux. Tire vers le front en écartant les coudes. Bon contre le dos voûté du télétravail."},
   {id:'pull_apart',name:"Écartés à l'élastique",target:'2 × 15–20',sets:2,min:15,max:20,levels:BANDS,
    how:"Bras tendus devant toi à hauteur d'épaules, écarte l'élastique jusqu'à ce qu'il touche la poitrine."},
   {id:'yt',name:'Y-T allongé',target:'2 × 10–15',sets:2,min:10,max:15,
    levels:[BW,L('bouteilles','Bouteilles de 50 cl')],
    how:"Allongé sur le ventre, front sur une serviette, pouces vers le plafond. Lève les bras en Y, redescends, puis en T."},
-  {id:'rot_ext',name:"Rotation externe d'épaule",target:'2 × 12–15',note:'par bras',sets:2,min:12,max:15,levels:BANDS,
-   how:"Élastique à hauteur du coude, coude collé au corps. Ouvre lentement l'avant-bras vers l'extérieur. Protège l'épaule."},
+  {id:'rot_ext',name:"Rotation externe d'épaule",target:'2 × 12–15',sets:2,min:12,max:15,levels:BANDS,
+   how:"Boucle tenue entre les mains, coudes collés au corps. Écarte les avant-bras vers l'extérieur. Protège les épaules."},
+  /* Poitrine, debout */
+  {id:'dev_debout',name:'Développé debout, boucle dans le dos',target:'3 × 10–15',sets:3,min:10,max:15,levels:BANDS,
+   how:"Boucle passée dans le dos, sous les aisselles. Pousse les mains devant toi à hauteur de poitrine."},
+  /* Biceps */
+  {id:'curl',name:'Curl biceps',target:'3 × 10–15',sets:3,min:10,max:15,levels:BANDS,
+   how:"Pieds au milieu de la boucle, une main de chaque côté, paumes vers l'avant. Monte les mains vers les épaules, coudes collés au corps."},
+  {id:'curl_marteau',name:'Curl marteau',target:'3 × 10–15',sets:3,min:10,max:15,levels:BANDS,
+   how:"Comme le curl, paumes face à face. Travaille aussi l'avant-bras."},
+  {id:'curl_1bras',name:'Curl un bras',target:'3 × 10–15',note:'par bras',sets:3,min:10,max:15,levels:BANDS,
+   how:"Un pied dans la boucle, une main tient l'autre extrémité. Toutes les répétitions d'un bras, puis l'autre."},
+  /* Triceps */
+  {id:'triceps_tete',name:'Extension triceps au-dessus de la tête',target:'3 × 10–15',sets:3,min:10,max:15,levels:BANDS,
+   how:"En fente, pied arrière dans la boucle, mains derrière la tête. Tends les bras vers le plafond, coudes près de la tête."},
+  {id:'kickback',name:'Kickback triceps',target:'3 × 12–15',sets:3,min:12,max:15,levels:BANDS,
+   how:"Buste penché, pied avant dans la boucle, bras collés au corps. Tends les avant-bras vers l'arrière."},
   /* Gainage */
   {id:'planche',name:'Planche',target:'3 × 30–45 s',sets:3,min:30,max:45,unit:'s',
    levels:[L('genoux','Sur les genoux'),L('classique','Classique'),L('jambe','Une jambe levée')],
@@ -518,18 +547,20 @@ const EXOS=[
   {id:'dead_bug',name:'Dead bug',target:'3 × 8–12',note:'par côté',sets:3,min:8,max:12,
    levels:[L('pliees','Jambe pliée'),L('tendues','Jambe tendue')],
    how:"Sur le dos, bas du dos plaqué au sol. Tends un bras et la jambe opposée sans décoller le dos, puis change de côté."},
-  {id:'pallof',name:'Pallof press',target:'3 × 10–12',note:'par côté',sets:3,min:10,max:12,levels:BANDS,
+  {id:'pallof',anchor:true,name:'Pallof press (accroche)',target:'3 × 10–12',note:'par côté',sets:3,min:10,max:12,levels:BANDS,
    how:"Élastique accroché à la porte à hauteur de poitrine, debout de profil. Pousse les mains devant toi sans laisser le buste tourner."}
 ];
 const EXO_BY=Object.fromEntries(EXOS.map(e=>[e.id,e]));
 const SLOTS=[
   {id:'jambes',duo:1,code:'A1',label:'Jambes',options:['fentes','squat','fentes_arr','montee','chaise_mur']},
-  {id:'dos',duo:1,code:'A2',label:'Dos',options:['rowing','rowing_table','tirage_haut','rowing_1bras']},
-  {id:'pousser',duo:2,code:'B1',label:'Poitrine et triceps',options:['pompes','pompes_serrees','dips','dev_sol']},
+  {id:'dos',duo:1,code:'A2',label:'Dos',options:['rowing_assis','tirage_ecarte','rowing_1bras','rowing_table','rowing','tirage_haut']},
+  {id:'pousser',duo:2,code:'B1',label:'Poitrine et triceps',options:['pompes','dev_debout','dev_sol','pompes_serrees','dips']},
   {id:'hanches',duo:2,code:'B2',label:'Fessiers et ischios',options:['pont','hip_thrust','sdt','leg_curl']},
   {id:'epaules',duo:3,code:'C1',label:'Épaules',options:['epaules','elev_lat','pike']},
-  {id:'posture',duo:3,code:'C2',label:'Haut du dos',options:['visage','pull_apart','yt','rot_ext']},
-  {id:'gainage',duo:4,code:'D1',label:'Gainage',options:['planche','planche_lat','dead_bug','pallof']}
+  {id:'posture',duo:3,code:'C2',label:'Haut du dos',options:['pull_apart','rot_ext','yt','visage']},
+  {id:'biceps',duo:4,code:'D1',label:'Biceps',options:['curl','curl_marteau','curl_1bras']},
+  {id:'triceps',duo:4,code:'D2',label:'Triceps',options:['triceps_tete','kickback']},
+  {id:'gainage',duo:5,code:'E1',label:'Gainage',options:['planche','planche_lat','dead_bug','pallof']}
 ];
 const SLOT_BY=Object.fromEntries(SLOTS.map(s=>[s.id,s]));
 const SLOT_OF={};SLOTS.forEach(s=>s.options.forEach(id=>{SLOT_OF[id]=s;}));
@@ -538,7 +569,8 @@ const DUOS=[
   {n:1,letter:'A',name:'Jambes et dos'},
   {n:2,letter:'B',name:'Poitrine et fessiers'},
   {n:3,letter:'C',name:'Épaules et haut du dos'},
-  {n:4,letter:'D',name:'Gainage'}
+  {n:4,letter:'D',name:'Bras'},
+  {n:5,letter:'E',name:'Gainage',core:true}
 ];
 const WARMUP=[
   ['Marche sur place, genoux hauts','45 secondes'],
@@ -557,60 +589,85 @@ const KINDS={
 };
 
 /* ============ niveaux et couleurs ============ */
-const lvlOf=(ex,k)=>ex.levels.find(l=>l.k===k)||ex.levels[0];
+const lvlOf=(ex,k)=>ex.levels.find(l=>l.k===k)||(LEGACY[k]?{k,label:LEGACY[k],s:LEGACY[k]}:ex.levels[0]);
 const lvlIdx=(ex,k)=>ex.levels.findIndex(l=>l.k===k);
+const PAL={vert:{c:'var(--b-vert)',fg:'#1D1A0E',n:'Vert'},jaune:{c:'var(--b-jaune)',fg:'#1D1A0E',n:'Jaune'},orange:{c:'var(--b-orange)',fg:'#1D1A0E',n:'Orange'},rouge:{c:'var(--b-rouge)',fg:'#FFFFFF',n:'Rouge'},bleu:{c:'var(--b-bleu)',fg:'#FFFFFF',n:'Bleu'},noir:{c:'var(--b-noir)',fg:'#FFFFFF',n:'Noir'}};
+const kitColor=kg=>PAL[(st.settings.kit||{})['k'+kg]]||PAL.jaune;
+const isBandLevel=k=>!!COMBO[k]||!!LEGACY[k];
 function lvlStyle(k){
+  if(COMBO[k]){
+    const parts=COMBO[k].map(kitColor);
+    return {bg:parts[0].c,fg:parts[0].fg,stripes:parts.slice(1).map(p=>p.c),n:COMBO[k].length};
+  }
   switch(k){
     case 'jaune':return {bg:'var(--b-jaune)',fg:'#1D1A0E'};
     case 'rouge':return {bg:'var(--b-rouge)',fg:'#FFFFFF'};
-    case 'vert':return {bg:'var(--b-vert)',fg:'#FFFFFF'};
+    case 'vert':return {bg:'var(--b-vert)',fg:'#1D1A0E'};
     case 'bleu':return {bg:'var(--b-bleu)',fg:'#FFFFFF'};
     case 'noir':return {bg:'var(--b-noir)',fg:'#FFFFFF'};
     case 'double':return {bg:'linear-gradient(115deg,var(--b-bleu) 0 50%,var(--b-noir) 50% 100%)',fg:'#FFFFFF'};
     default:return {bg:'var(--hero-n)',fg:'var(--hero-n-ink)'};
   }
 }
-const badge=(code,k,cls)=>{const s=lvlStyle(k);return `<span class="${cls||'badge'}" style="background:${s.bg};color:${s.fg}">${esc(code)}</span>`;};
+/* une bande de couleur en haut pour chaque élastique ajouté */
+const stripeShadow=(sty,h)=>(sty.stripes||[]).map((c,i)=>`inset 0 ${(i+1)*h}px 0 ${c}`).join(',');
+function applyKit(){
+  let css='';
+  Object.keys(COMBO).forEach(k=>{
+    const parts=COMBO[k].map(kitColor), n=parts.length;
+    const bg=n===1?parts[0].c:`linear-gradient(90deg,${parts.map((p,i)=>`${p.c} ${Math.round(i*100/n)}% ${Math.round((i+1)*100/n)}%`).join(',')})`;
+    css+=`.sw[data-k="${k}"]{background:${bg};box-shadow:${parts.some(p=>p===PAL.noir)?'inset 0 0 0 1px var(--ink-3)':'none'}}`;
+  });
+  const el=document.getElementById('kit-style');if(el)el.textContent=css;
+}
+const badge=(code,k,cls)=>{const s=lvlStyle(k);const sh=stripeShadow(s,cls==='badge-mini'?4:5);return `<span class="${cls||'badge'}" style="background:${s.bg};color:${s.fg}${sh?';box-shadow:'+sh:''}">${esc(code)}</span>`;};
 
 
 /* ============ installation : matériel, prise, départ, points clés ============ */
-const DOOR=" Ferme la porte, idéalement à clé, et tire dans le sens qui la ferme.";
+const FIX=" Vérifie que le point fixe ne peut ni glisser ni basculer.";
 const SETUP={
-  fentes:{where:'sous le pied avant',band:"Optionnel : l'élastique passe sous le pied avant, au milieu.",grip:"Une poignée dans chaque main, bras le long du corps. Sans élastique : mains sur les hanches.",start:"Dos au canapé, à un grand pas devant. Pose le dessus du pied arrière sur l'assise.",cues:["Le genou avant reste au-dessus du pied, sans rentrer vers l'intérieur.","Descends droit, comme dans un ascenseur."]},
-  squat:{where:'sous les deux pieds',band:"Sous les deux pieds, écartés de la largeur des épaules.",grip:"Poignées ramenées devant les épaules, coudes vers le bas.",start:"Debout, pointes de pieds légèrement ouvertes.",cues:["Pousse les fesses en arrière, comme pour t'asseoir.","Talons au sol, genoux dans l'axe des pieds."]},
-  fentes_arr:{where:'sous le pied avant',band:"Optionnel : sous le pied avant. Fais alors toutes les répétitions d'une jambe, puis change.",grip:"Une poignée dans chaque main, bras le long du corps.",start:"Debout, pieds sous les hanches.",cues:["Grand pas en arrière, genou arrière vers le sol.","Le poids reste sur le talon avant."]},
+  fentes:{where:'pied avant dans la boucle',band:"Optionnel : pose le pied avant au milieu de la boucle.",grip:"Tiens l'autre extrémité de la boucle à deux mains, bras tendus le long du corps. Sans élastique : mains sur les hanches.",start:"Dos au canapé, à un grand pas devant. Pose le dessus du pied arrière sur l'assise.",cues:["Le genou avant reste au-dessus du pied, sans rentrer vers l'intérieur.","Descends droit, comme dans un ascenseur."]},
+  squat:{where:"pieds dans la boucle, l'autre bout sur les épaules",band:"Les deux pieds au milieu de la boucle, écartés de la largeur des épaules.",grip:"Passe l'autre extrémité derrière la nuque, sur le haut des épaules, et tiens-la des deux mains devant les épaules.",start:"Debout, pointes de pieds légèrement ouvertes.",cues:["Pousse les fesses en arrière, comme pour t'asseoir.","Talons au sol, genoux dans l'axe des pieds."]},
+  fentes_arr:{where:'pied avant dans la boucle',band:"Optionnel : pied avant au milieu de la boucle. Fais alors toutes les répétitions d'une jambe, puis change.",grip:"Tiens l'autre extrémité à deux mains, bras tendus.",start:"Debout, pieds sous les hanches.",cues:["Grand pas en arrière, genou arrière vers le sol.","Le poids reste sur le talon avant."]},
   montee:{band:"Pas d'élastique. Pour durcir : sac à dos chargé sur le dos.",grip:"Bras libres pour l'équilibre, ou mains sur les hanches.",start:"Face à une chaise stable calée contre un mur, ou à une marche d'escalier.",cues:["Pose tout le pied sur la chaise.","Monte avec la jambe du haut, sans pousser avec celle du bas."]},
   chaise_mur:{band:"Pas d'élastique. Un mur libre suffit.",grip:"Bras le long du corps ou mains posées sur les cuisses, sans appuyer.",start:"Dos au mur, pieds à environ deux pieds du mur, puis glisse vers le bas.",cues:["Cuisses parallèles au sol, genoux au-dessus des chevilles.","Respire normalement pendant le maintien."]},
-  rowing:{where:'porte, hauteur de poitrine',band:"Ancrage de porte coincé côté charnières, à hauteur de poitrine."+DOOR,grip:"Une poignée dans chaque main, paumes face à face, bras tendus devant toi.",start:"Face à la porte, recule jusqu'à ce que l'élastique soit tendu, bras tendus.",cues:["Tire les coudes vers l'arrière, près du corps.","Serre les omoplates une seconde, puis relâche lentement."]},
+  rowing_assis:{where:'sous la plante des pieds',band:"La boucle passe sous la plante des deux pieds.",grip:"Tiens l'autre extrémité à deux mains, paumes face à face, bras tendus vers les pieds.",start:"Assis au sol, jambes tendues ou légèrement fléchies, dos droit.",cues:["Tire les coudes vers l'arrière, près du corps.","Le buste reste droit : ne te penche pas en arrière pour tirer."]},
+  tirage_ecarte:{where:'tenue entre les deux mains',band:"Rien à accrocher : tiens un côté de la boucle entre tes deux mains.",grip:"Mains un peu plus écartées que les épaules, bras tendus au-dessus de la tête.",start:"Debout ou à genoux, ventre serré.",cues:["Écarte les mains en descendant les coudes vers les côtés, jusqu'à la poitrine.","Remonte lentement, sans cambrer."]},
+  rowing:{where:'point fixe, hauteur de poitrine',band:"Boucle passée autour d'un point fixe solide à hauteur de poitrine : rampe d'escalier, pied de meuble très lourd, ou ancrage de porte (vendu à part) côté charnières, porte fermée à clé."+FIX,grip:"Une main de chaque côté de la boucle, paumes face à face, bras tendus.",start:"Face au point fixe, recule jusqu'à ce que l'élastique soit tendu, bras tendus.",cues:["Tire les coudes vers l'arrière, près du corps.","Serre les omoplates une seconde, puis relâche lentement."]},
   rowing_table:{band:"Pas d'élastique. Une table lourde et stable : vérifie qu'elle ne peut pas basculer.",grip:"Mains au bord de la table, écartées de la largeur des épaules.",start:"Allongé sous la table, poitrine sous le bord, talons au sol, corps gainé.",cues:["Tire la poitrine vers la table, le corps reste droit comme une planche.","Redescends lentement, bras tendus."]},
-  tirage_haut:{where:'porte, tout en haut',band:"Ancrage de porte coincé côté charnières, tout en haut de la porte."+DOOR,grip:"Une poignée dans chaque main, bras tendus vers le haut en V.",start:"À genoux face à la porte, assez loin pour que l'élastique soit tendu bras levés.",cues:["Tire les coudes vers le bas, vers les hanches.","Poitrine sortie, sans te pencher en arrière."]},
-  rowing_1bras:{where:'sous le pied avant',band:"Sous le pied avant, du côté du bras qui tire.",grip:"La poignée dans la main qui tire. L'autre main est posée sur la chaise.",start:"Un pied devant la chaise, buste penché, dos plat.",cues:["Tire le coude vers la hanche, pas vers le plafond.","Le buste ne tourne pas."]},
-  pompes:{where:'dans le dos, sous les mains',band:"Seulement au dernier niveau : élastique passé dans le dos, une poignée bloquée sous chaque main.",grip:"Mains au sol, un peu plus larges que les épaules, doigts vers l'avant.",start:"Corps aligné de la tête aux talons, sur les orteils. Plus facile : mains sur une table.",cues:["Coudes à 45° du corps, pas en croix.","Le bassin ne s'affaisse pas."]},
+  tirage_haut:{where:'accroche en haut de la porte',band:"Boucle passée dans un ancrage de porte (vendu à part) coincé tout en haut, côté charnières, porte fermée à clé."+FIX,grip:"Une main de chaque côté de la boucle, bras tendus vers le haut en V.",start:"À genoux face à la porte, assez loin pour que l'élastique soit tendu bras levés.",cues:["Tire les coudes vers le bas, vers les hanches.","Poitrine sortie, sans te pencher en arrière."]},
+  rowing_1bras:{where:'pied avant dans la boucle',band:"Pose le pied avant au milieu de la boucle.",grip:"Tiens l'autre extrémité dans la main qui tire. L'autre main est posée sur la chaise.",start:"Un pied devant la chaise, buste penché, dos plat.",cues:["Tire le coude vers la hanche, pas vers le plafond.","Le buste ne tourne pas."]},
+  pompes:{where:'dans le dos, bloqué sous les mains',band:"Seulement au dernier niveau : passe la boucle dans ton dos, au niveau des omoplates, et bloque chaque extrémité sous une main.",grip:"Mains au sol, un peu plus larges que les épaules, doigts vers l'avant.",start:"Corps aligné de la tête aux talons, sur les orteils. Plus facile : mains sur une table.",cues:["Coudes à 45° du corps, pas en croix.","Le bassin ne s'affaisse pas."]},
   pompes_serrees:{band:"Pas d'élastique.",grip:"Mains sous les épaules, plus serrées que pour des pompes classiques.",start:"Corps aligné de la tête aux talons. Plus facile : mains sur une table.",cues:["Coudes collés au corps en descendant.","Pousse fort pour remonter, bras tendus en haut."]},
   dips:{band:"Pas d'élastique. Une chaise stable calée contre un mur.",grip:"Mains au bord de l'assise, de chaque côté des fesses, doigts vers l'avant.",start:"Bras tendus, fesses juste devant l'assise, pieds au sol.",cues:["Descends jusqu'à ce que les coudes forment un angle droit, pas plus bas.","Coudes vers l'arrière, épaules basses."]},
-  dev_sol:{where:'dans le dos, sous les omoplates',band:"Passé sous le haut du dos, au niveau des omoplates.",grip:"Une poignée dans chaque main, poings vers le plafond.",start:"Allongé sur le dos, genoux pliés, pieds à plat.",cues:["Redescends jusqu'à ce que les coudes touchent le sol.","Coudes à 45° du corps."]},
-  pont:{where:'autour des cuisses',band:"Optionnel : une boucle autour des cuisses, juste au-dessus des genoux.",grip:"Bras le long du corps, paumes au sol.",start:"Allongé sur le dos, genoux pliés, talons à une main des fesses.",cues:["Pousse dans les talons et serre les fessiers en haut.","Avec l'élastique, garde les genoux légèrement écartés."]},
+  dev_sol:{where:'dans le dos, sous les omoplates',band:"Boucle passée dans le dos, sous les omoplates.",grip:"Une extrémité dans chaque main, poings vers le plafond.",start:"Allongé sur le dos, genoux pliés, pieds à plat.",cues:["Redescends jusqu'à ce que les coudes touchent le sol.","Coudes à 45° du corps."]},
+  pont:{where:'enroulée autour des cuisses',band:"Optionnel : enroule la boucle deux ou trois fois autour des cuisses, juste au-dessus des genoux, pour qu'elle soit tendue.",grip:"Bras le long du corps, paumes au sol.",start:"Allongé sur le dos, genoux pliés, talons à une main des fesses.",cues:["Pousse dans les talons et serre les fessiers en haut.","Avec l'élastique, garde les genoux légèrement écartés."]},
   hip_thrust:{band:"Pas d'élastique. Pour durcir : sac à dos chargé posé sur les hanches.",grip:"Bras le long du corps, ou mains qui tiennent le sac.",start:"Bas des omoplates appuyé sur le bord du canapé, pieds à plat, écartés.",cues:["Monte jusqu'à aligner épaules, hanches et genoux.","Menton rentré, regard vers les genoux."]},
-  sdt:{where:'sous les deux pieds',band:"Sous les deux pieds, écartés de la largeur des hanches.",grip:"Une poignée dans chaque main, bras tendus devant les cuisses.",start:"Debout, genoux légèrement fléchis, dos droit.",cues:["Recule les fesses : le buste descend, dos plat.","Remonte en serrant les fessiers."]},
+  sdt:{where:'pieds au milieu de la boucle',band:"Les deux pieds au milieu de la boucle, écartés de la largeur des hanches.",grip:"Tiens l'autre extrémité à deux mains, bras tendus devant les cuisses.",start:"Debout, genoux légèrement fléchis, dos droit.",cues:["Recule les fesses : le buste descend, dos plat.","Remonte en serrant les fessiers."]},
   leg_curl:{band:"Pas d'élastique. Une serviette sous les talons, sur un sol lisse (parquet, carrelage).",grip:"Bras au sol, le long du corps.",start:"Sur le dos, jambes tendues, talons sur la serviette, hanches soulevées.",cues:["Garde les hanches en l'air pendant tout le mouvement.","Ramène les talons, puis repousse lentement."]},
-  epaules:{where:'sous les deux pieds',band:"Sous les deux pieds. Sous un seul pied, la tension est plus faible.",grip:"Poignées devant les épaules, paumes vers l'avant.",start:"Debout, pieds largeur de hanches, ventre serré.",cues:["Pousse vers le plafond, bras tendus près des oreilles.","Ne cambre pas le bas du dos."]},
-  elev_lat:{where:'sous les deux pieds',band:"Sous les deux pieds, une extrémité de chaque côté.",grip:"Une poignée dans chaque main, bras le long du corps, coudes légèrement fléchis.",start:"Debout, pieds largeur de hanches.",cues:["Monte jusqu'à l'horizontale, pas plus haut.","Épaules basses, loin des oreilles."]},
+  epaules:{where:'pieds au milieu de la boucle',band:"Les pieds au milieu de la boucle. Avec un seul pied dedans, la tension est plus faible.",grip:"Une main de chaque côté de la boucle, devant les épaules, paumes vers l'avant.",start:"Debout, pieds largeur de hanches, ventre serré.",cues:["Pousse vers le plafond, bras tendus près des oreilles.","Ne cambre pas le bas du dos."]},
+  elev_lat:{where:'pieds au milieu de la boucle',band:"Les deux pieds au milieu de la boucle.",grip:"Chaque main tient un côté de la boucle, bras le long du corps, coudes légèrement fléchis.",start:"Debout, pieds largeur de hanches.",cues:["Monte jusqu'à l'horizontale, pas plus haut.","Épaules basses, loin des oreilles."]},
   pike:{band:"Pas d'élastique.",grip:"Mains au sol, écartées de la largeur des épaules.",start:"Hanches hautes, corps en V à l'envers, jambes aussi tendues que possible.",cues:["Descends le haut du crâne vers le sol, entre les mains.","Coudes vers l'arrière, pas en croix."]},
-  visage:{where:'porte, hauteur des yeux',band:"Ancrage de porte coincé côté charnières, à hauteur des yeux."+DOOR,grip:"Une poignée dans chaque main, paumes vers le sol, bras tendus vers la porte.",start:"Face à la porte, recule jusqu'à ce que l'élastique soit tendu.",cues:["Tire vers le front, coudes écartés et plus hauts que les mains.","Serre les omoplates une seconde."]},
-  pull_apart:{where:'tenu entre les deux mains',band:"Rien à accrocher : l'élastique est tenu entre les mains. Avec un tube à poignées, tiens le tube lui-même, plus près du centre pour plus de tension.",grip:"Mains écartées de la largeur des épaules, paumes vers le sol, bras tendus devant toi.",start:"Debout, bras à hauteur d'épaules.",cues:["Écarte jusqu'à ce que l'élastique touche la poitrine.","Bras tendus du début à la fin."]},
+  visage:{where:'point fixe, hauteur des yeux',band:"Boucle passée autour d'un point fixe solide à hauteur des yeux, ou d'un ancrage de porte (vendu à part) côté charnières, porte fermée à clé."+FIX,grip:"Une main de chaque côté de la boucle, paumes vers le sol, bras tendus.",start:"Face au point fixe, recule jusqu'à ce que l'élastique soit tendu.",cues:["Tire vers le front, coudes écartés et plus hauts que les mains.","Serre les omoplates une seconde."]},
+  pull_apart:{where:'tenue entre les deux mains',band:"Rien à accrocher : tiens un côté de la boucle entre tes deux mains.",grip:"Mains écartées de la largeur des épaules, paumes vers le sol, bras tendus devant toi. Rapproche les mains pour plus de tension.",start:"Debout, bras à hauteur d'épaules.",cues:["Écarte jusqu'à ce que l'élastique touche la poitrine.","Bras tendus du début à la fin."]},
   yt:{band:"Pas d'élastique. Pour durcir : une bouteille de 50 cl dans chaque main.",grip:"Pouces vers le plafond.",start:"Allongé sur le ventre, front posé sur une serviette roulée.",cues:["Lève les bras en Y, puis en T, sans décoller la poitrine.","Mouvement lent, omoplates serrées."]},
-  rot_ext:{where:'porte, hauteur du coude',band:"Ancrage de porte côté charnières, à hauteur du coude. Tu te places de profil, le bras qui travaille du côté opposé à la porte."+DOOR,grip:"La poignée en main, coude collé au corps, avant-bras devant le ventre.",start:"Debout de profil par rapport à la porte. Une serviette roulée entre le coude et le corps aide à le garder en place.",cues:["Ouvre l'avant-bras vers l'extérieur : le coude ne bouge pas.","Lentement, sans forcer."]},
+  rot_ext:{where:'tenue entre les deux mains',band:"Rien à accrocher : tiens un côté de la boucle entre tes deux mains.",grip:"Coudes collés au corps, avant-bras devant toi, mains à la largeur des épaules, paumes vers le haut.",start:"Debout, épaules basses. Une serviette roulée entre chaque coude et le corps aide à les garder en place.",cues:["Écarte les avant-bras vers l'extérieur : les coudes ne bougent pas.","Lentement, sans forcer."]},
+  dev_debout:{where:'dans le dos, sous les aisselles',band:"Passe la boucle dans ton dos, sous les aisselles.",grip:"Une extrémité dans chaque main, devant la poitrine, coudes vers l'arrière.",start:"Debout, un pied légèrement devant l'autre, ventre serré.",cues:["Pousse les mains devant toi à hauteur de poitrine, jusqu'à tendre les bras.","Reviens lentement, sans laisser l'élastique te tirer en arrière."]},
+  curl:{where:'pieds au milieu de la boucle',band:"Les deux pieds au milieu de la boucle, écartés de la largeur des hanches.",grip:"Une main de chaque côté de la boucle, paumes vers l'avant, bras tendus.",start:"Debout, coudes collés au corps.",cues:["Monte les mains vers les épaules : seuls les avant-bras bougent.","Redescends lentement, sans balancer le buste."]},
+  curl_marteau:{where:'pieds au milieu de la boucle',band:"Les deux pieds au milieu de la boucle, écartés de la largeur des hanches.",grip:"Une main de chaque côté de la boucle, paumes face à face, pouces vers le haut.",start:"Debout, coudes collés au corps.",cues:["Monte les mains vers les épaules, pouces vers le haut.","Coudes immobiles, descente lente."]},
+  curl_1bras:{where:'un pied dans la boucle',band:"Un pied au milieu de la boucle, du côté du bras qui travaille.",grip:"Tiens l'autre extrémité dans une main, paume vers l'avant. L'autre main sur la hanche.",start:"Debout, coude collé au corps.",cues:["Seul l'avant-bras bouge.","Fais toutes les répétitions d'un bras, puis change."]},
+  triceps_tete:{where:'pied arrière dans la boucle',band:"Pied arrière au milieu de la boucle, en position de fente.",grip:"Tiens l'autre extrémité à deux mains derrière la tête, coudes pointés vers le plafond.",start:"Debout en fente, ventre serré, sans cambrer.",cues:["Tends les bras vers le plafond : les coudes restent près de la tête.","Redescends lentement derrière la tête."]},
+  kickback:{where:'pied avant dans la boucle',band:"Pied avant au milieu de la boucle.",grip:"Une main de chaque côté de la boucle, coudes pliés, bras collés au corps.",start:"Buste penché en avant, dos plat, genoux légèrement fléchis.",cues:["Tends les avant-bras vers l'arrière : seuls les avant-bras bougent.","Serre les triceps une seconde en fin de mouvement."]},
   planche:{band:"Pas d'élastique. Un tapis ou une serviette sous les coudes.",grip:"Avant-bras au sol, coudes sous les épaules.",start:"Sur les avant-bras et les orteils, corps aligné.",cues:["Serre le ventre et les fessiers : le bassin ne s'affaisse pas.","Regarde le sol, la nuque dans l'alignement."]},
   planche_lat:{band:"Pas d'élastique. Un tapis ou une serviette sous le coude.",grip:"Avant-bras au sol, coude sous l'épaule. L'autre bras vers le plafond ou la main sur la hanche.",start:"Sur le côté, pieds empilés.",cues:["Hanches hautes, corps aligné.","Fais le temps d'un côté, puis de l'autre."]},
   dead_bug:{band:"Pas d'élastique.",grip:"Bras tendus vers le plafond.",start:"Sur le dos, genoux pliés à 90° au-dessus des hanches.",cues:["Bas du dos plaqué au sol en permanence.","Tends un bras et la jambe opposée, lentement, puis change de côté."]},
-  pallof:{where:'porte, hauteur de poitrine',band:"Ancrage de porte côté charnières, à hauteur de poitrine."+DOOR,grip:"Les deux mains sur la même poignée, contre la poitrine.",start:"De profil par rapport à la porte, assez loin pour que l'élastique soit tendu, pieds largeur d'épaules.",cues:["Pousse les mains devant toi, tiens 2 secondes, ramène.","Le buste ne tourne pas vers la porte."]}
+  pallof:{where:'point fixe, hauteur de poitrine',band:"Boucle passée autour d'un point fixe solide à hauteur de poitrine : rampe d'escalier, pied de meuble très lourd, ou ancrage de porte (vendu à part)."+FIX,grip:"Les deux mains tiennent l'autre extrémité de la boucle, contre la poitrine.",start:"De profil par rapport au point fixe, assez loin pour que l'élastique soit tendu, pieds largeur d'épaules.",cues:["Pousse les mains devant toi, tiens 2 secondes, ramène.","Le buste ne tourne pas vers le point fixe."]}
 };
-const BAND_KEYS=['jaune','rouge','vert','bleu','noir','double'];
-const usesBand=(ex,lv)=>BAND_KEYS.includes(lv)||(ex.id==='pompes'&&lv==='elast');
+const usesBand=(ex,lv)=>isBandLevel(lv)||(ex.id==='pompes'&&lv==='elast');
 function whereHTML(ex,lv){
   const su=SETUP[ex.id];
   if(!su||!su.where||!usesBand(ex,lv)) return '';
-  const name=BAND_KEYS.includes(lv)?lvlOf(ex,lv).label:'Élastique';
+  const name=isBandLevel(lv)?lvlOf(ex,lv).label:'Élastique';
   return `<p class="s-where"><i class="sw" data-k="${esc(lv)}"></i><span><b>${esc(name)}</b> : ${esc(su.where)}</span></p>`;
 }
 function setupHTML(ex){
@@ -626,7 +683,7 @@ function setupHTML(ex){
 
 /* ============ données ============ */
 const KEY='carnet-muscu-v1', LIVE_KEY='carnet-muscu-live-v1';
-const DEF={v:1,entries:[],plan:{},levels:{},settings:{restDuo:90,restCore:60,sound:true},lastBackup:0,installHidden:false};
+const DEF={v:2,entries:[],plan:{},levels:{},settings:{restDuo:90,restCore:60,sound:true,kit:{k10:'vert',k20:'jaune',k30:'orange'},anchor:false},lastBackup:0,installHidden:false};
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
 function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
@@ -638,6 +695,13 @@ function loadState(){
   s.entries.sort((a,b)=>(b.ts||0)-(a.ts||0));
   if(!s.plan||typeof s.plan!=='object') s.plan={};
   if(!s.levels||typeof s.levels!=='object') s.levels={};
+  s.settings.kit=Object.assign({},DEF.settings.kit,s.settings.kit||{});
+  if((s.v||1)<2){
+    /* passage aux boucles 10/20/30 kg : les anciens niveaux par couleur ne correspondent plus */
+    Object.keys(s.levels).forEach(id=>{if(LEGACY[s.levels[id]])delete s.levels[id];});
+    SLOTS.forEach(sl=>{const id=s.plan[sl.id];if(id&&EXO_BY[id]&&EXO_BY[id].anchor)delete s.plan[sl.id];});
+    s.v=2;
+  }
   return s;
 }
 let st=loadState();
@@ -660,7 +724,7 @@ function currentExo(slot){
   const p=st.plan[slot.id];
   if(p&&slot.options.includes(p)) return p;
   for(const e of st.entries){
-    if(e.kind==='force'&&e.exos){const hit=slot.options.find(id=>e.exos[id]);if(hit)return hit;}
+    if(e.kind==='force'&&e.exos){const hit=slot.options.find(id=>e.exos[id]&&(st.settings.anchor||!EXO_BY[id].anchor));if(hit)return hit;}
   }
   return slot.options[0];
 }
@@ -695,7 +759,7 @@ function estimateMin(){
     const exs=SLOTS.filter(s=>s.duo===d.n).map(s=>EXO_BY[currentExo(s)]);
     const n=Math.max(...exs.map(e=>e.sets));
     exs.forEach(e=>{sec+=e.sets*(e.unit==='s'?(e.max+15):40);});
-    sec+=n*(d.n===4?st.settings.restCore:st.settings.restDuo);
+    sec+=n*(d.core?st.settings.restCore:st.settings.restDuo);
   });
   return Math.round(sec/60/5)*5;
 }
@@ -873,9 +937,28 @@ S.pull_apart={view:'front',band:[['a1','a2']],tm:[.3,1.0,.5,1.4],
 S.yt={view:'front',props:P.mat(),noFloor:true,tm:[.4,1.0,.5,1.0],
   A:{hip:[150,127],t:-90,a1:{a:[-125,-125]},a2:{a:[-55,-55]},l1:{to:[146,AY],s:1},l2:{to:[154,AY],s:-1}},
   B:{hip:[150,127],t:-90,a1:{a:[180,180]},a2:{a:[0,0]},l1:{to:[146,AY],s:1},l2:{to:[154,AY],s:-1}}};
-S.rot_ext={view:'front',props:P.post(40,60)+P.dot(46,107),band:[[[46,107],'a2']],tm:[.3,1.0,.4,1.3],
-  A:{hip:[150,127],t:-90,a1:{a:[94,92]},a2:{a:[90,0],k:[1,-.55]},l1:{to:[140,AY],s:1},l2:{to:[160,AY],s:-1}},
-  B:{hip:[150,127],t:-90,a1:{a:[94,92]},a2:{a:[90,0],k:[1,.9]},l1:{to:[140,AY],s:1},l2:{to:[160,AY],s:-1}}};
+S.rot_ext={view:'front',band:[['a1','a2']],tm:[.3,1.0,.4,1.3],
+  A:{hip:[150,127],t:-90,a1:{a:[90,180],k:[1,-.35]},a2:{a:[90,0],k:[1,-.35]},l1:{to:[140,AY],s:1},l2:{to:[160,AY],s:-1}},
+  B:{hip:[150,127],t:-90,a1:{a:[90,180],k:[1,.85]},a2:{a:[90,0],k:[1,.85]},l1:{to:[140,AY],s:1},l2:{to:[160,AY],s:-1}}};
+S.rowing_assis={band:[['l1','a1']],tm:[.3,1.0,.4,1.4],
+  A:{hip:[140,198],t:-92,hd:-88,a1:{to:[196,170],s:1},a2:{to:[192,172],s:1},l1:{to:[220,198],s:-1,ft:-80},l2:{to:[216,200],s:-1,ft:-80}},
+  B:{hip:[140,198],t:-92,hd:-88,a1:{to:[154,170],s:1},a2:{to:[150,172],s:1},l1:{to:[220,198],s:-1,ft:-80},l2:{to:[216,200],s:-1,ft:-80}}};
+S.tirage_ecarte={view:'front',band:[['a1','a2']],tm:[.3,1.1,.4,1.4],
+  A:{hip:[150,127],t:-90,a1:{a:[-106,-100]},a2:{a:[-74,-80]},l1:{to:[140,AY],s:1},l2:{to:[160,AY],s:-1}},
+  B:{hip:[150,127],t:-90,a1:{a:[142,-112]},a2:{a:[38,-68]},l1:{to:[140,AY],s:1},l2:{to:[160,AY],s:-1}}};
+S.dev_debout={band:[['sh','a1']],tm:[.3,1.0,.3,1.4],
+  A:{hip:[148,127],t:-90,a1:{to:[168,92],s:1},a2:{to:[164,94],s:1},l1:{to:[166,AY],s:-1},l2:{to:[136,AY],s:-1}},
+  B:{hip:[148,127],t:-90,a1:{to:[206,84],s:1},a2:{to:[202,86],s:1},l1:{to:[166,AY],s:-1},l2:{to:[136,AY],s:-1}}};
+S.curl={band:[['l1','a1']],tm:[.3,1.0,.3,1.4],
+  A:{hip:[150,127],t:-90,a1:{a:[92,90]},a2:{a:[90,88]},l1:{to:[156,AY],s:-1},l2:{to:[150,AY],s:-1}},
+  B:{hip:[150,127],t:-90,a1:{a:[90,-60]},a2:{a:[88,-62]},l1:{to:[156,AY],s:-1},l2:{to:[150,AY],s:-1}}};
+S.curl_marteau=S.curl;S.curl_1bras=S.curl;
+S.triceps_tete={band:[['l2','a1']],tm:[.3,1.0,.3,1.4],
+  A:{hip:[150,127],t:-90,a1:{a:[-98,112]},a2:{a:[-96,114]},l1:{to:[176,AY],s:-1},l2:{to:[124,AY],s:-1}},
+  B:{hip:[150,127],t:-90,a1:{a:[-96,-92]},a2:{a:[-94,-90]},l1:{to:[176,AY],s:-1},l2:{to:[124,AY],s:-1}}};
+S.kickback={band:[['l1','a1']],tm:[.3,0.9,.4,1.3],
+  A:{hip:[148,132],t:-24,hd:-10,a1:{a:[138,90]},a2:{a:[136,88]},l1:{to:[166,AY],s:-1},l2:{to:[140,AY],s:-1}},
+  B:{hip:[148,132],t:-24,hd:-10,a1:{a:[138,170]},a2:{a:[136,168]},l1:{to:[166,AY],s:-1},l2:{to:[140,AY],s:-1}}};
 S.planche={tm:[1,1.6,1,1.6],
   A:{hip:[157,184],t:-11.7,a1:{a:[90,0]},a2:{a:[90,0]},l1:{to:[80,200],s:-1,ft:75},l2:{to:[76,200],s:-1,ft:75}},
   B:{hip:[157,181],t:-9,a1:{a:[90,0]},a2:{a:[90,0]},l1:{to:[80,200],s:-1,ft:75},l2:{to:[76,200],s:-1,ft:75}}};
@@ -890,12 +973,12 @@ S.pallof={view:'top',props:P.post(30,60)+P.dot(36,96),noFloor:true,band:[[[36,96
   B:{hip:[150,128],t:-90,a1:{to:[148,74],s:-1},a2:{to:[152,74],s:1}}};
 
 /* rendu */
-const BANDK=['jaune','rouge','vert','bleu','noir','double'];
-const bandColor=k=>k==='double'?'var(--b-bleu)':'var(--b-'+k+')';
+const bandColor=k=>lvlStyle(k).bg.startsWith('linear')?'var(--b-bleu)':lvlStyle(k).bg;
+const bandWidth=k=>4+2*((COMBO[k]||[0]).length-1);
 function svg(id,level,cls){
   const s=S[id];if(!s)return '';
   const v=s.view||'side';
-  const showBand=s.band&&BANDK.includes(level);
+  const showBand=s.band&&isBandLevel(level);
   const far=v==='side'?' fg-far':'';
   return `<svg class="fig ${cls||''}" viewBox="0 0 300 220" data-fig="${id}" data-band="${showBand?esc(level):''}" role="img" aria-label="Animation de l'exercice. Touche pour mettre en pause.">
     ${s.noFloor?'':floor}${s.props||''}
@@ -907,8 +990,9 @@ function svg(id,level,cls){
       ${v==='front'?'<path class="fg-hips" data-j="hips"/><path class="fg-shoulders" data-j="shs"/>':''}
       ${v==='top'?'<path class="fg-shoulders fg-top" data-j="shs"/>':'<path class="fg-torso" data-j="torso"/>'}
       <circle class="fg-head" data-j="head" r="${LEN.R}"/>
+      <path class="fg-halo" data-j="a1h"/>
       <path class="fg-limb" data-j="a1"/>
-      ${showBand?s.band.map((b,i)=>`<path class="fg-band" data-b="${i}" style="stroke:${bandColor(level)}"/>`).join(''):''}
+      ${showBand?s.band.map((b,i)=>`<path class="fg-band" data-b="${i}" style="stroke:${bandColor(level)};stroke-width:${bandWidth(level)}"/>`).join(''):''}
     </g>
   </svg>`;
 }
@@ -927,7 +1011,7 @@ function draw(el,t){
   const J=solve(v,mix(s.A,s.B,t));
   const set=(j,d)=>{const n=el.querySelector('[data-j="'+j+'"]');if(n)n.setAttribute('d',d);};
   if(J.l1)set('l1',pts(J.l1));if(J.l2)set('l2',pts(J.l2));
-  if(J.a1)set('a1',pts(J.a1));if(J.a2)set('a2',pts(J.a2));
+  if(J.a1){set('a1',pts(J.a1));set('a1h',pts(J.a1));}if(J.a2)set('a2',pts(J.a2));
   if(v==='front'){set('hips',pts([J.hL,J.hR]));set('shs',pts([J.sL,J.sR]));set('torso',pts([J.hip,J.sh]));}
   else if(v==='top'){set('shs',pts([J.sL,J.sR]));}
   else set('torso',pts([J.hip,J.sh]));
@@ -1007,10 +1091,10 @@ function viewSeance(){
   </div>`;
   DUOS.forEach(d=>{
     const slots=SLOTS.filter(s=>s.duo===d.n);
-    const rest=d.n===4?`${st.settings.restCore} s de repos entre les séries`:`enchaînés, puis ${st.settings.restDuo} s de repos`;
+    const rest=d.core?`${st.settings.restCore} s de repos entre les séries`:`enchaînés, puis ${st.settings.restDuo} s de repos`;
     h+=`<div class="duo-h"><b>${d.letter}. ${esc(d.name)}</b><span>${rest}</span></div><div class="group">${slots.map(exoRow).join('')}</div>`;
   });
-  h+=`<p class="note">Touche un exercice pour changer de variante ou de niveau. Les couleurs suivent l'ordre le plus courant des élastiques, du plus léger au plus dur : vérifie celui de ta marque.</p>`;
+  h+=`<p class="note">Touche un exercice pour changer de variante ou de niveau. Couleurs de tes élastiques : ${[10,20,30].map(kg=>kitColor(kg).n.toLowerCase()+' '+kg+' kg').join(', ')}. Tu peux les changer dans Réglages.</p>`;
   return h;
 }
 
@@ -1158,7 +1242,7 @@ function sheetExo(exoId){
   h+=`<p class="note" style="margin-left:2px">Objectif : ${list(g.sets,ex.unit)}.</p>`;
   if(inPlan){
     const alts=slot.options.filter(id=>id!==exoId);
-    h+=`<p class="sh-sec">Remplacer par</p><div class="group">${alts.map(id=>{const a=EXO_BY[id];return `<button class="row plain" type="button" data-act="swap" data-slot="${slot.id}" data-to="${id}"><span class="r-main"><span class="r-name">${esc(a.name)}</span><span class="r-sub">${esc(a.target)}${a.note?' '+esc(a.note):''}</span></span><i class="chev"></i></button>`;}).join('')}</div>`;
+    h+=`<p class="sh-sec">Remplacer par</p><div class="group">${alts.map(id=>{const a=EXO_BY[id];return `<button class="row plain" type="button" data-act="swap" data-slot="${slot.id}" data-to="${id}"><span class="r-main"><span class="r-name">${esc(a.name)}</span><span class="r-sub">${esc(a.target)}${a.note?' '+esc(a.note):''}${a.anchor?', point fixe nécessaire':''}</span></span><i class="chev"></i></button>`;}).join('')}</div>`;
   } else {
     h+=`<div style="margin-top:16px"><button class="btn-sec w" type="button" data-act="swap" data-slot="${slot.id}" data-to="${exoId}">Mettre dans la séance (${esc(slot.code)})</button></div>`;
   }
@@ -1211,6 +1295,10 @@ function sheetSettings(){
   h+=`<p class="sh-sec">Repos entre deux duos</p>${seg('set-rest-duo',[60,75,90,120],s.restDuo,'s')}
     <p class="sh-sec">Repos du gainage</p>${seg('set-rest-core',[30,45,60],s.restCore,'s')}
     <div class="group" style="margin-top:20px"><div class="set-row"><p>Son à la fin du repos<small>Trois bips avant la reprise</small></p><button class="switch" type="button" role="switch" aria-checked="${s.sound}" aria-label="Son à la fin du repos" data-act="toggle-sound"></button></div></div>
+    <p class="sh-sec">Mes élastiques</p>
+    <div class="group">${[10,20,30].map(kg=>`<div class="set-row"><p>${kg} kg</p><div class="kit-pick">${Object.keys(PAL).map(c=>`<button type="button" class="kit-c${s.kit['k'+kg]===c?' on':''}" style="background:${PAL[c].c}" data-act="kit-color" data-kg="${kg}" data-c="${c}" aria-label="${PAL[c].n}" aria-pressed="${s.kit['k'+kg]===c}"></button>`).join('')}</div></div>`).join('')}
+      <div class="set-row"><p>J'ai un point fixe solide<small>Rampe, meuble lourd ou ancrage de porte : ajoute au mélange les exercices accrochés</small></p><button class="switch" type="button" role="switch" aria-checked="${s.anchor}" aria-label="J'ai un point fixe solide" data-act="toggle-anchor"></button></div></div>
+    <p class="note" style="margin-left:2px">D'après Decathlon, les kilos indiquent la force pour étirer l'élastique au double de sa longueur. Deux boucles ensemble additionnent à peu près leur résistance.</p>
     <p class="sh-sec">Sauvegarde</p>
     <div class="group"><div class="set-row"><p>Tes données restent sur ce téléphone<small>${st.lastBackup?'Dernière sauvegarde le '+esc(fDay.format(new Date(st.lastBackup))):'Aucune sauvegarde pour l’instant'}</small></p></div></div>
     <div class="stack" style="margin-top:10px">
@@ -1226,7 +1314,7 @@ function sheetSettings(){
     <p class="sh-text">Ouvre cette page dans Safari, touche Partager, puis « Sur l'écran d'accueil ». L'app s'ouvre alors en plein écran et marche hors connexion.</p>
     <p class="sh-sec">Effacer</p>
     <button class="btn-del" type="button" data-act="wipe" data-confirm="Confirmer : tout effacer">Effacer toutes les données</button>
-    <p class="note" style="margin-left:2px">Carnet de muscu, version 1.3</p>`;
+    <p class="note" style="margin-left:2px">Carnet de muscu, version 1.5</p>`;
   openSheet(h,'settings');
 }
 function sheetQuit(){
@@ -1250,7 +1338,7 @@ function buildLive(){
     const slots=SLOTS.filter(s=>s.duo===d.n);
     const exs=slots.map(s=>EXO_BY[currentExo(s)]);
     const n=Math.max(...exs.map(e=>e.sets));
-    const rest=d.n===4?st.settings.restCore:st.settings.restDuo;
+    const rest=d.core?st.settings.restCore:st.settings.restDuo;
     for(let i=0;i<n;i++){
       exs.forEach((ex,j)=>{if(i<ex.sets)steps.push({t:'set',exo:ex.id,code:slots[j].code,slot:slots[j].id,i});});
       steps.push({t:'rest',sec:rest});
@@ -1329,7 +1417,7 @@ function setHTML(step){
       <h2 class="s-name">${esc(ex.name)}</h2>
       ${ui.lvOpen?`<div class="lv-chips" role="radiogroup" aria-label="Niveau">${ex.levels.map(l=>`<button class="lv-chip${l.k===lv?' on':''}" type="button" role="radio" aria-checked="${l.k===lv}" data-act="sess-level" data-k="${l.k}"><i class="sw" data-k="${l.k}"></i>${esc(l.s)}</button>`).join('')}</div>`:''}
       <div class="s-fig">${FIG.svg(ex.id,lv)}${whereHTML(ex,lv)}</div>
-      <section class="hero" style="--hero:${sty.bg};--hero-ink:${sty.fg}" aria-label="Série en cours">
+      <section class="hero" style="--hero:${sty.bg};--hero-ink:${sty.fg}${sty.stripes&&sty.stripes.length?';box-shadow:'+stripeShadow(sty,12):''}" aria-label="Série en cours">
         <p class="hero-set">Série ${step.i+1} sur ${ex.sets}</p>
         <div class="hero-row">
           <button class="pm" type="button" data-act="dec" aria-label="Moins"${running?' disabled':''}>−</button>
@@ -1457,10 +1545,10 @@ function validateSet(){
 }
 function shuffle(){
   SLOTS.forEach(s=>{
-    const cur=currentExo(s), alts=s.options.filter(id=>id!==cur);
+    const cur=currentExo(s), alts=s.options.filter(id=>id!==cur&&(st.settings.anchor||!EXO_BY[id].anchor));
     st.plan[s.id]=alts[Math.floor(Math.random()*alts.length)];
   });
-  save();render();toast('Nouvelle combinaison : 7 exercices différents');
+  save();render();toast(`Nouvelle combinaison : ${SLOTS.length} exercices différents`);
 }
 function b64e(s){return btoa(unescape(encodeURIComponent(s)));}
 function b64d(s){return decodeURIComponent(escape(atob(s)));}
@@ -1533,6 +1621,8 @@ document.addEventListener('click',ev=>{
       toast('Supprimé');break;}
     case 'set-rest-duo':st.settings.restDuo=+el.dataset.v;save();render();sheetSettings();break;
     case 'set-rest-core':st.settings.restCore=+el.dataset.v;save();render();sheetSettings();break;
+    case 'kit-color':st.settings.kit['k'+el.dataset.kg]=el.dataset.c;save();applyKit();render();sheetSettings();break;
+    case 'toggle-anchor':st.settings.anchor=!st.settings.anchor;save();el.setAttribute('aria-checked',String(st.settings.anchor));render();break;
     case 'toggle-sound':st.settings.sound=!st.settings.sound;save();el.setAttribute('aria-checked',String(st.settings.sound));if(st.settings.sound){unlockAudio();tone(880,0.12,0,0.25);}break;
     case 'backup-copy':{
       const t=backupText();
@@ -1585,6 +1675,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 /* ============ démarrage ============ */
+applyKit();
 render();
 if('serviceWorker' in navigator&&location.protocol==='https:'){
   window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
