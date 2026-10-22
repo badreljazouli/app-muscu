@@ -12,8 +12,8 @@
 <meta name="color-scheme" content="light dark">
 <meta name="format-detection" content="telephone=no">
 <meta name="robots" content="noindex">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="icon" type="image/png" href="icon-192.png?v=2">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Carnet de muscu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -197,7 +197,8 @@ textarea.field{min-height:100px;padding:12px 14px;font-size:16px;line-height:1.4
 .s-code{display:flex;align-items:center;gap:10px;margin:0;font-size:15px;font-weight:600;color:var(--ink-2)}
 .badge-mini{min-width:36px;height:28px;padding:0 6px;border-radius:8px;display:grid;place-items:center;font-size:14px;font-weight:800;font-stretch:88%;box-shadow:inset 0 0 0 1px rgba(127,127,127,.18)}
 .s-name{margin:0;font-size:31px;line-height:1.04;font-weight:800;font-stretch:116%;letter-spacing:-.015em;text-wrap:balance}
-.lv-chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0;scrollbar-width:none}
+.s-body>*{flex-shrink:0}
+.lv-chips{position:relative;display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:4px 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .lv-chips::-webkit-scrollbar{display:none}
 .lv-chip{flex:none;display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 14px 0 11px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);font-size:15px;font-weight:600;white-space:nowrap}
 .lv-chip.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
@@ -909,7 +910,7 @@ function sheetSettings(){
     <p class="sh-text">Ouvre cette page dans Safari, touche Partager, puis « Sur l'écran d'accueil ». L'app s'ouvre alors en plein écran et marche hors connexion.</p>
     <p class="sh-sec">Effacer</p>
     <button class="btn-del" type="button" data-act="wipe" data-confirm="Confirmer : tout effacer">Effacer toutes les données</button>
-    <p class="note" style="margin-left:2px">Carnet de muscu, version 1.0</p>`;
+    <p class="note" style="margin-left:2px">Carnet de muscu, version 1.1</p>`;
   openSheet(h,'settings');
 }
 function sheetQuit(){
@@ -979,6 +980,7 @@ function renderSess(){
   const step=live.steps[live.idx];
   el.innerHTML=step.t==='rest'?restHTML():setHTML(step);
   if(step.t==='rest')tick();
+  else{const row=$('#sess .lv-chips'),on=row&&row.querySelector('.on');if(on)row.scrollLeft=Math.max(0,on.offsetLeft-(row.clientWidth-on.offsetWidth)/2);}
 }
 function warmHTML(){
   return `<div class="s-wrap">
